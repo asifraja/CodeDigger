@@ -58,23 +58,6 @@ namespace CodeDigger
                         SyntaxTree tree = CSharpSyntaxTree.ParseText(await document.GetTextAsync());
                         var root = (CompilationUnitSyntax)tree.GetRoot();
                         collector.Visit(root);
-                        //foreach (var directive in collector.Usings)
-                        //{
-                        //    Console.WriteLine("Using " + directive.Name);
-                        //}
-                        //foreach (var directive in collector.Namespances)
-                        //{
-                        //    Console.WriteLine("Namespance " + directive.Name);
-                        //}
-                        //foreach (var directive in collector.Classes)
-                        //{
-                        //    Console.WriteLine("Class " + directive.Identifier.ValueText);
-                        //}
-                        //foreach (var directive in collector.Methods)
-                        //{
-                        //    //Console.WriteLine("Method " + directive.Identifier.ValueText);
-                        //    Console.WriteLine("Method " + directive.ToString());
-                        //}
                     }
                 }
             }

@@ -1,7 +1,8 @@
 {
   "profiles": {
     "CodeDigger": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "D:\\Projects\\Bookings\\Source\\easyJet.Bookings.sln"
     }
   }
 }

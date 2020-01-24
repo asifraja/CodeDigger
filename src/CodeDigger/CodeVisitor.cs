@@ -7,6 +7,8 @@ namespace UsingCollectorCS
 {
     public class CodeVisitor
     {
+        //    // CREATE (Email:Client {id:'1', description:'email client', repo:'localgit:emailClient'})
+        //    // "CREATE (:{kind} {id:'{id}', description:'email client', repo:'localgit:emailClient'})"
         protected CodeVisitor()
         {
         }
@@ -18,7 +20,7 @@ namespace UsingCollectorCS
             _nodes = nodes;
             _relations = relations;
             Register(EnumNodeKind.File, FilePath, FileName);
-            System.Console.WriteLine(FilePath);
+            //System.Console.WriteLine(FilePath);
         }
 
         public string FilePath { get; }
@@ -46,36 +48,6 @@ namespace UsingCollectorCS
             }
         }
 
-        //private void Register(string container, EnumNodeKind kind, string name, EnumRelated related)
-        //{
-        //    // CREATE (john:Person {name: 'John'})
-        //    // CREATE (Email:Client {id:'1', description:'email client', repo:'localgit:emailClient'})
-        //    // "CREATE (:{kind} {id:'{id}', description:'email client', repo:'localgit:emailClient'})"
-        //    var containserey = container;
-
-        //    if (!_nodes.ContainsKey(key))
-        //    {
-        //        var node = new Node { Name = name, Key = key, Kind = kind };
-        //        _nodes.Add(key, node);
-        //    }
-
-        //    key = container + "." + name;
-
-        //    if (!_nodes.ContainsKey(key))
-        //    {
-        //        var node = new Node {Name = name,Key = key, Kind = kind };
-        //        _nodes.Add(key, node);
-        //    }
-
-        //    var relatedKey = key + "." + related.ToString();
-
-        //    if (!_relations.ContainsKey(relatedKey))
-        //    {
-        //        var relayed = new Relation { FromKey = container, ToKey = key, RelatedAs = related };
-        //        _relations.Add(relatedKey, relayed);
-        //    }
-        //}
-
         public void Visit(InterfaceDeclarationSyntax node)
         {
             var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
@@ -101,6 +73,21 @@ namespace UsingCollectorCS
             Visit(key, node.Members);
         }
 
+        public void Visit(ClassOrStructConstraintSyntax node)
+        {
+            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
+            if (namespaceNode == null)
+            {
+                namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
+            }
+
+            //var key = namespaceNode.Name.ToString() + "." + node.Identifier.Text;
+            //Register(EnumNodeKind.Class, key, node.Identifier.Text);
+            //Relate(namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
+            //Visit(FilePath, namespaceNode);
+            //Visit(key, node.Members);
+        }
+
         // TODO: Add support for Generics, Interface and inheritence
         public void Visit(ClassDeclarationSyntax node)
         {
@@ -116,6 +103,8 @@ namespace UsingCollectorCS
             Visit(FilePath, namespaceNode);
             Visit(key, node.Members);
         }
+
+     
 
         private void Visit(string containerKey, NamespaceDeclarationSyntax node)
         {
@@ -147,6 +136,20 @@ namespace UsingCollectorCS
             }
         }
 
+        public void Visit(StructDeclarationSyntax node,string containerKey = "")
+        {
+            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
+            if (namespaceNode == null)
+            {
+                namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
+            }
+            var key = containerKey.Length > 0? containerKey + "." + node.Identifier.Text : namespaceNode.Name.ToString() + "." + node.Identifier.Text;
+            Register(EnumNodeKind.Struct, key, node.Identifier.Text);
+            Relate(containerKey.Length > 0 ? containerKey : namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
+            Visit(FilePath, namespaceNode);
+            Visit(key, node.Members);
+        }
+
         private void Visit(string containerKey, SyntaxList<MemberDeclarationSyntax> members)
         {
             foreach (var node in members)
@@ -165,6 +168,8 @@ namespace UsingCollectorCS
                     Visit(node as EnumDeclarationSyntax);
                 else if (node is ConstructorDeclarationSyntax)
                     Visit(containerKey, node as ConstructorDeclarationSyntax);
+                else if (node is StructDeclarationSyntax)
+                    Visit(node as StructDeclarationSyntax, containerKey);
                 else
                 {
                     System.Console.WriteLine("\tmember XXX : " + node.ToString());

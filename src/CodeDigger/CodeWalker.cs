@@ -20,8 +20,6 @@ namespace UsingCollectorCS
         public string FilePath { get; }
         public string FileName { get; }
         public CodeVisitor CodeVisitor { get; }
-        //public IDictionary<string, Node> Nodes = new Dictionary<string, Node>();
-        //public IDictionary<string, Relation> Relations = new Dictionary<string, Relation>();
 
         public readonly List<InterfaceDeclarationSyntax> Interfaces = new List<InterfaceDeclarationSyntax>();
         public readonly List<TypeParameterSyntax> TypeParameters = new List<TypeParameterSyntax>();
@@ -73,6 +71,18 @@ namespace UsingCollectorCS
         {
             CodeVisitor.Visit(node);
             base.VisitClassDeclaration(node);
+        }
+
+        public override void VisitClassOrStructConstraint(ClassOrStructConstraintSyntax node)
+        {
+            CodeVisitor.Visit(node);
+            base.VisitClassOrStructConstraint(node);
+        }
+
+        public override void VisitStructDeclaration(StructDeclarationSyntax node)
+        {
+            CodeVisitor.Visit(node);
+            base.VisitStructDeclaration(node);
         }
 
         public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
