@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CodeDigger.Models;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -17,6 +18,9 @@ namespace CodeDigger
 {
     class Program
     {
+        public static IDictionary<string, Node> Nodes = new Dictionary<string, Node>();
+        public static IDictionary<string, Relation> Relations = new Dictionary<string, Relation>();
+
         static async Task Main(string[] args)
         {
             // Attempt to set the version of MSBuild.
@@ -45,33 +49,32 @@ namespace CodeDigger
                 // Attach progress reporter so we print projects as they are loaded.
                 var solution = await workspace.OpenSolutionAsync(solutionPath, new ConsoleProgressReporter());                
                 Console.WriteLine($"Finished loading solution '{solutionPath}'");
-             
-                foreach (var project in solution.Projects)
+
+                foreach (var project in solution.Projects)//.Where(p=>p.Name.Equals("easyJet.Bookings")))
                 {
-                    foreach (var document in project.Documents)
+                    foreach (var document in project.Documents)//.Where(d=>!d.Name.Contains("Dummy")))
                     {
+                        var collector = new CodeWalker(document.FilePath, document.Name, Nodes,Relations);
                         SyntaxTree tree = CSharpSyntaxTree.ParseText(await document.GetTextAsync());
                         var root = (CompilationUnitSyntax)tree.GetRoot();
-                        var collector = new CodeWalker();
                         collector.Visit(root);
-                        Console.WriteLine(" **** File " + document.Name);
-                        foreach (var directive in collector.Usings)
-                        {
-                            Console.WriteLine("Using " + directive.Name);
-                        }
-                        foreach (var directive in collector.Namespances)
-                        {
-                            Console.WriteLine("Namespance " + directive.Name);
-                        }
-                        foreach (var directive in collector.Classes)
-                        {
-                            Console.WriteLine("Class " + directive.Identifier.ValueText);
-                        }
-                        foreach (var directive in collector.Methods)
-                        {
-                            //Console.WriteLine("Method " + directive.Identifier.ValueText);
-                            Console.WriteLine("Method " + directive.ToString());
-                        }
+                        //foreach (var directive in collector.Usings)
+                        //{
+                        //    Console.WriteLine("Using " + directive.Name);
+                        //}
+                        //foreach (var directive in collector.Namespances)
+                        //{
+                        //    Console.WriteLine("Namespance " + directive.Name);
+                        //}
+                        //foreach (var directive in collector.Classes)
+                        //{
+                        //    Console.WriteLine("Class " + directive.Identifier.ValueText);
+                        //}
+                        //foreach (var directive in collector.Methods)
+                        //{
+                        //    //Console.WriteLine("Method " + directive.Identifier.ValueText);
+                        //    Console.WriteLine("Method " + directive.ToString());
+                        //}
                     }
                 }
             }

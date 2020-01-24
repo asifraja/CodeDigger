@@ -2,19 +2,35 @@
 
 namespace CodeDigger.Models
 {
+    public enum TypeSignatureEnum
+    {
+        Namespace,
+        Class,
+        Method,
+        MethodParameter
+    }
+
     public class TypeSignature
     {
-        public string Modifier { get; set; }
-        public string Type { get; set; }
-        public String Name { get; set; }
-        public static TypeSignature Create(string modifier, string type, string name)
+        public string Modifier { get; }
+        public string ReturnType { get; }
+        public String Name { get;  }
+
+        public TypeSignatureEnum TypeSignatureEnum { get;  }
+
+        private TypeSignature() {}
+
+        public TypeSignature(TypeSignatureEnum signatureEnum, string modifier, string returnType, string name)
         {
-            return new TypeSignature { Modifier = modifier, Type = type, Name = name };
+            TypeSignatureEnum = signatureEnum;
+            Modifier = modifier; 
+            ReturnType = returnType;
+            Name = name ;
         }
 
         public override string ToString()
         {
-            return $"{Modifier} {Type} {Name}";
+            return $"{Modifier} {ReturnType} {Name}";
         }
     }
 }

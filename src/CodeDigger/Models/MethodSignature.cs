@@ -3,27 +3,21 @@ using System.Text;
 
 namespace CodeDigger.Models
 {
-    public class MethodSignature
+    public class MethodSignature : TypeSignature
     {
-        private MethodSignature() { }
+        public MethodSignature(string modifier, string returnType, string name, IEnumerable<TypeSignature> parameters) 
+            : base(TypeSignatureEnum.Method, modifier, returnType, name)
+        {
+            Parameters = parameters;
+        }
 
-        public MethodSignature(TypeSignature method, IList<TypeSignature> properties)
-        {
-            Method = method;
-            Properties = properties;
-        }
-        public TypeSignature Method { get; }
-        
-        public IEnumerable<TypeSignature> Properties
-        {
-            get;
-        }
+        public IEnumerable<TypeSignature> Parameters { get; }
 
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append(Method.ToString());
-            foreach (var para in Properties)
+            sb.Append(Name);
+            foreach (var para in Parameters)
             {
                 sb.Append( " " + para.ToString() + " ");
             }
