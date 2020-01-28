@@ -2,7 +2,7 @@
   "profiles": {
     "CodeDigger": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Projects\\Bookings\\Source\\easyJet.Bookings.sln"
+      "commandLineArgs": "D:\\Projects\\Whitepages\\WhitePages\\Source\\easyJet.WhitePages.sln"
     }
   }
 }

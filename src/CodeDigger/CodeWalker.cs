@@ -10,15 +10,16 @@ namespace UsingCollectorCS
     {
         protected CodeWalker() { }
 
-        public CodeWalker(string filePath, string fielName, IDictionary<string, Node> nodes, IDictionary<string, Relation> relations)
+        public CodeWalker(string filePath, string fielName, IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
         {
             FilePath = filePath;
             FileName = fielName;
-            CodeVisitor = new CodeVisitor(FilePath, FileName, nodes, relations);
+            CodeVisitor = new CodeVisitor(FilePath, FileName, nodes, edges);
         }
 
         public string FilePath { get; }
         public string FileName { get; }
+        public string SolutionName { get; }
         public CodeVisitor CodeVisitor { get; }
 
         public readonly List<InterfaceDeclarationSyntax> Interfaces = new List<InterfaceDeclarationSyntax>();
@@ -61,35 +62,35 @@ namespace UsingCollectorCS
         //    base.VisitPropertyDeclaration(node);
         //}
 
-        public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
+        public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax nodeSyntax)
         {
-            CodeVisitor.Visit(node);
-            base.VisitInterfaceDeclaration(node);
+            CodeVisitor.Visit(nodeSyntax);
+            base.VisitInterfaceDeclaration(nodeSyntax);
         }
 
-        public override void VisitClassDeclaration(ClassDeclarationSyntax node)
+        public override void VisitClassDeclaration(ClassDeclarationSyntax nodeSyntax)
         {
-            CodeVisitor.Visit(node);
-            base.VisitClassDeclaration(node);
+            CodeVisitor.Visit(nodeSyntax);
+            base.VisitClassDeclaration(nodeSyntax);
         }
 
-        public override void VisitClassOrStructConstraint(ClassOrStructConstraintSyntax node)
+        public override void VisitClassOrStructConstraint(ClassOrStructConstraintSyntax nodeSyntax)
         {
-            CodeVisitor.Visit(node);
-            base.VisitClassOrStructConstraint(node);
+            CodeVisitor.Visit(nodeSyntax);
+            base.VisitClassOrStructConstraint(nodeSyntax);
         }
 
-        public override void VisitStructDeclaration(StructDeclarationSyntax node)
+        public override void VisitStructDeclaration(StructDeclarationSyntax nodeSyntax)
         {
-            CodeVisitor.Visit(node);
-            base.VisitStructDeclaration(node);
+            CodeVisitor.Visit(nodeSyntax);
+            base.VisitStructDeclaration(nodeSyntax);
         }
 
-        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+        public override void VisitEnumDeclaration(EnumDeclarationSyntax nodeSyntax)
         {
             {
-                CodeVisitor.Visit(node);
-                base.VisitEnumDeclaration(node);
+                CodeVisitor.Visit(nodeSyntax);
+                base.VisitEnumDeclaration(nodeSyntax);
             }
 
             //public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)

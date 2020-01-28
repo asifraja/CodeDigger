@@ -1,6 +1,7 @@
 ﻿using CodeDigger.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 
 namespace UsingCollectorCS
@@ -13,13 +14,13 @@ namespace UsingCollectorCS
         {
         }
 
-        public CodeVisitor(string filePath, string fileName, IDictionary<string, Node> nodes, IDictionary<string, Relation> relations)
+        public CodeVisitor(string filePath, string fileName, IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
         {
             FilePath = filePath;
             FileName = fileName;
             _nodes = nodes;
-            _relations = relations;
-            Register(EnumNodeKind.File, FilePath, FileName);
+            _edges = edges;
+            Register(EnumKInd.File, FilePath, FileName);
             //System.Console.WriteLine(FilePath);
         }
 
@@ -27,58 +28,73 @@ namespace UsingCollectorCS
         public string FileName { get; }
 
         private IDictionary<string, Node> _nodes;
-        private IDictionary<string, Relation> _relations;
+        private IDictionary<string, EdgeNode> _edges;
 
-        private void Register(EnumNodeKind kind, string key, string name)
+        private Node Register(EnumKInd kind, string key, string name)
         {
             if (!_nodes.ContainsKey(key))
             {
-                var node = new Node { Name = name, Key = key, Kind = kind };
+                var node = new Node { Name = name, Key = key, Kind = kind};
                 _nodes.Add(key, node);
+                return node;
             }
+            return null;
         }
 
-        private void Relate(string fromKey, string toKey, EnumRelated relatedAs)
+        private EdgeNode Relate(string fromKey, string toKey, EnumRelations relatedAs)
         {
             var key = fromKey + "." + toKey + "." + relatedAs.ToString();
-            if (!_relations.ContainsKey(key))
+            if (!_edges.ContainsKey(key))
             {
-                var related = new Relation { FromKey = fromKey, ToKey = toKey, RelatedAs = relatedAs};
-                _relations.Add(key, related);
+                var related = new EdgeNode { Source = fromKey, Target = toKey, Related = relatedAs};
+                if(_nodes.ContainsKey(fromKey))
+                {
+                    related.SourceId = _nodes[fromKey].Id;
+                }
+                if (_nodes.ContainsKey(toKey))
+                {
+                    related.TargetId = _nodes[toKey].Id;
+                }
+                _edges.Add(key, related);
+                return related;
             }
+            return null;
         }
 
-        public void Visit(InterfaceDeclarationSyntax node)
+        public void Visit(InterfaceDeclarationSyntax syntaxNode)
         {
-            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
+            var namespaceNode = syntaxNode.Parent as NamespaceDeclarationSyntax;
             if (namespaceNode == null)
             {
-                namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
+                namespaceNode = syntaxNode.Parent.Parent as NamespaceDeclarationSyntax;
             }
-            var key = namespaceNode.Name.ToString()+"."+node.Identifier.Text;
-            Register(EnumNodeKind.Interface, key, node.Identifier.Text);
-            Relate(namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
+            var key = namespaceNode.Name.ToString()+"."+syntaxNode.Identifier.Text;
+            Register(EnumKInd.Interface, key, syntaxNode.Identifier.Text);
+            Relate(namespaceNode.Name.ToString(), key, EnumRelations.DefinedIn);
             Visit(key, namespaceNode);
-            Visit(key, node.Members);
+            Visit(key, syntaxNode.Members);
         }
 
-        public void Visit(EnumDeclarationSyntax node)
+        public void Visit(EnumDeclarationSyntax syntaxNode)
         {
-            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
-            
-            var key = namespaceNode.Name.ToString() + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Enum, key, node.Identifier.Text);
-            Relate(namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
-            Visit(key, namespaceNode);
-            Visit(key, node.Members);
-        }
-
-        public void Visit(ClassOrStructConstraintSyntax node)
-        {
-            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
+            var namespaceNode = syntaxNode.Parent as NamespaceDeclarationSyntax;
             if (namespaceNode == null)
             {
-                namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
+                namespaceNode = syntaxNode.Parent.Parent as NamespaceDeclarationSyntax;
+            }
+            var key = namespaceNode.Name.ToString() + "." + syntaxNode.Identifier.Text;
+            Register(EnumKInd.Enum, key, syntaxNode.Identifier.Text);
+            Relate(namespaceNode.Name.ToString(), key, EnumRelations.DefinedIn);
+            Visit(key, namespaceNode);
+            Visit(key, syntaxNode.Members);
+        }
+
+        public void Visit(ClassOrStructConstraintSyntax syntaxNode)
+        {
+            var namespaceNode = syntaxNode.Parent as NamespaceDeclarationSyntax;
+            if (namespaceNode == null)
+            {
+                namespaceNode = syntaxNode.Parent.Parent as NamespaceDeclarationSyntax;
             }
 
             //var key = namespaceNode.Name.ToString() + "." + node.Identifier.Text;
@@ -89,31 +105,29 @@ namespace UsingCollectorCS
         }
 
         // TODO: Add support for Generics, Interface and inheritence
-        public void Visit(ClassDeclarationSyntax node)
+        public void Visit(ClassDeclarationSyntax syntaxNode)
         {
-            var namespaceNode = node.Parent as NamespaceDeclarationSyntax;
+            var namespaceNode = syntaxNode.Parent as NamespaceDeclarationSyntax;
             if (namespaceNode == null)
             {
-                namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
+                namespaceNode = syntaxNode.Parent.Parent as NamespaceDeclarationSyntax;
             }
 
-            var key = namespaceNode.Name.ToString() + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Class, key, node.Identifier.Text);
-            Relate(namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
+            var key = namespaceNode.Name.ToString() + "." + syntaxNode.Identifier.Text;
+            Register(EnumKInd.Class, key, syntaxNode.Identifier.Text);
+            Relate(namespaceNode.Name.ToString(), key, EnumRelations.DefinedIn);
             Visit(FilePath, namespaceNode);
-            Visit(key, node.Members);
+            Visit(key, syntaxNode.Members);
         }
 
-     
-
-        private void Visit(string containerKey, NamespaceDeclarationSyntax node)
+        private void Visit(string containerKey, NamespaceDeclarationSyntax syntaxNode)
         {
-            if (node == null) return;
+            if (syntaxNode == null) return;
 
-            var key = node.Name.ToString();
-            Register(EnumNodeKind.Namespace, key, node.Name.ToString());
-            Relate(containerKey, key, EnumRelated.DefinedIn);
-            Visit(key, node.Usings);
+            var key = syntaxNode.Name.ToString();
+            Register(EnumKInd.Namespace, key, syntaxNode.Name.ToString());
+            Relate(containerKey, key, EnumRelations.DefinedIn);
+            Visit(key, syntaxNode.Usings);
         }
 
         private void Visit(string containerKey, SyntaxList<UsingDirectiveSyntax> usings)
@@ -121,8 +135,8 @@ namespace UsingCollectorCS
             foreach (var usingNode in usings)
             {
                 var key = usingNode.Name.ToString();
-                Register(EnumNodeKind.Using, key, usingNode.Name.ToString());
-                Relate(containerKey, key, EnumRelated.Uses);
+                Register(EnumKInd.Using, key, usingNode.Name.ToString());
+                Relate(containerKey, key, EnumRelations.Uses);
             }
         }
 
@@ -131,8 +145,8 @@ namespace UsingCollectorCS
             foreach (var enumMemberNode in members)
             {
                 var key = containerKey+"."+enumMemberNode.ToString();
-                Register(EnumNodeKind.EnumField, key, enumMemberNode.ToString());
-                Relate(containerKey, key, EnumRelated.Of);
+                Register(EnumKInd.EnumField, key, enumMemberNode.ToString());
+                Relate(containerKey, key, EnumRelations.Of);
             }
         }
 
@@ -144,69 +158,79 @@ namespace UsingCollectorCS
                 namespaceNode = node.Parent.Parent as NamespaceDeclarationSyntax;
             }
             var key = containerKey.Length > 0? containerKey + "." + node.Identifier.Text : namespaceNode.Name.ToString() + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Struct, key, node.Identifier.Text);
-            Relate(containerKey.Length > 0 ? containerKey : namespaceNode.Name.ToString(), key, EnumRelated.DefinedIn);
+            Register(EnumKInd.Struct, key, node.Identifier.Text);
+            Relate(containerKey.Length > 0 ? containerKey : namespaceNode.Name.ToString(), key, EnumRelations.DefinedIn);
             Visit(FilePath, namespaceNode);
             Visit(key, node.Members);
         }
 
         private void Visit(string containerKey, SyntaxList<MemberDeclarationSyntax> members)
         {
-            foreach (var node in members)
+            foreach (var syntaxNode in members)
             {
-                if (node is MethodDeclarationSyntax)
-                    Visit(containerKey, node as MethodDeclarationSyntax);
-                else if (node is PropertyDeclarationSyntax)
-                    Visit(containerKey, node as PropertyDeclarationSyntax);
-                else if (node is FieldDeclarationSyntax)
-                    Visit(containerKey, node as FieldDeclarationSyntax);
-                else if (node is ClassDeclarationSyntax)
-                    Visit(node as ClassDeclarationSyntax);
-                else if (node is InterfaceDeclarationSyntax)
-                    Visit(node as InterfaceDeclarationSyntax);
-                else if (node is EnumDeclarationSyntax)
-                    Visit(node as EnumDeclarationSyntax);
-                else if (node is ConstructorDeclarationSyntax)
-                    Visit(containerKey, node as ConstructorDeclarationSyntax);
-                else if (node is StructDeclarationSyntax)
-                    Visit(node as StructDeclarationSyntax, containerKey);
+                if (syntaxNode is MethodDeclarationSyntax)
+                    Visit(containerKey, syntaxNode as MethodDeclarationSyntax);
+                else if (syntaxNode is PropertyDeclarationSyntax)
+                    Visit(containerKey, syntaxNode as PropertyDeclarationSyntax);
+                else if (syntaxNode is FieldDeclarationSyntax)
+                    Visit(containerKey, syntaxNode as FieldDeclarationSyntax);
+                else if (syntaxNode is ClassDeclarationSyntax)
+                    Visit(syntaxNode as ClassDeclarationSyntax);
+                else if (syntaxNode is InterfaceDeclarationSyntax)
+                    Visit(syntaxNode as InterfaceDeclarationSyntax);
+                else if (syntaxNode is EnumDeclarationSyntax)
+                    Visit(syntaxNode as EnumDeclarationSyntax);
+                else if (syntaxNode is ConstructorDeclarationSyntax)
+                    Visit(containerKey, syntaxNode as ConstructorDeclarationSyntax);
+                else if (syntaxNode is StructDeclarationSyntax)
+                    Visit(syntaxNode as StructDeclarationSyntax, containerKey);
+                else if (syntaxNode is OperatorDeclarationSyntax)
+                    Visit(containerKey, syntaxNode as OperatorDeclarationSyntax);
                 else
                 {
-                    System.Console.WriteLine("\tmember XXX : " + node.ToString());
+                    System.Console.WriteLine("\tmember XXX : " + syntaxNode.ToString());
                 }
             }
         }
 
-        private void Visit(string containerKey, ConstructorDeclarationSyntax node)
+        private void Visit(string containerKey, OperatorDeclarationSyntax syntaxNode)
         {
-            var key = containerKey + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Constructor, key, node.Identifier.Text);
-            Relate(containerKey, key, EnumRelated.DefinedIn);
-            Visit(key, node.ParameterList.Parameters);
+            var key = containerKey + "." + syntaxNode.OperatorToken.Text;
+            Register(EnumKInd.Operator, key, syntaxNode.OperatorToken.Text);
+            Relate(containerKey, key, EnumRelations.DefinedIn);
+            Visit(key, syntaxNode.ParameterList.Parameters);
         }
 
-        private void Visit(string containerKey, MethodDeclarationSyntax node)
+        private void Visit(string containerKey, ConstructorDeclarationSyntax syntaxNode)
         {
-            var key = containerKey + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Method, key, node.Identifier.Text);
-            Relate(containerKey, key, EnumRelated.DefinedIn);
-            Visit(key, node.ParameterList.Parameters);
+            var key = containerKey + "." + syntaxNode.Identifier.Text;
+            Register(EnumKInd.Constructor, key, syntaxNode.Identifier.Text);
+            Relate(containerKey, key, EnumRelations.DefinedIn);
+            Visit(key, syntaxNode.ParameterList.Parameters);
         }
 
-        private void Visit(string containerKey, PropertyDeclarationSyntax node)
+        private void Visit(string containerKey, MethodDeclarationSyntax syntaxNode)
         {
-            var key = containerKey + "." + node.Identifier.Text;
-            Register(EnumNodeKind.Property, key, node.Identifier.Text);
-            Relate(containerKey, key, EnumRelated.DefinedIn);
+            var key = containerKey + "." + syntaxNode.Identifier.Text;
+            Register(EnumKInd.Method, key, syntaxNode.Identifier.Text);
+            Relate(containerKey, key, EnumRelations.DefinedIn);
+            Visit(key, syntaxNode.ParameterList.Parameters);
         }
 
-        private void Visit(string containerKey, FieldDeclarationSyntax node)
+        private void Visit(string containerKey, PropertyDeclarationSyntax syntaxNode)
         {
-            var name = node.Declaration.Variables.First().Identifier.Text;
+            var key = containerKey + "." + syntaxNode.Identifier.Text;
+            Register(EnumKInd.Property, key, syntaxNode.Identifier.Text);
+            Relate(containerKey, key, EnumRelations.DefinedIn);
+        }
+
+        private void Visit(string containerKey, FieldDeclarationSyntax syntaxNode)
+        {
+            var name = syntaxNode.Declaration.Variables.First().Identifier.Text;
             var key = containerKey + "." + name;
-            System.Console.WriteLine("\tfield: " + name);
-            Register(EnumNodeKind.Field, key, name);
-            Relate(containerKey, key, EnumRelated.DefinedIn);
+            //System.Console.WriteLine("\tfield: " + name);
+            Register(EnumKInd.Field, key, name);
+            Relate(containerKey, key, EnumRelations.DefinedIn);
         }
 
         private void Visit(string containerKey, SeparatedSyntaxList<ParameterSyntax> parameters)
@@ -214,8 +238,8 @@ namespace UsingCollectorCS
             foreach (var para in parameters)
             {
                 var key = containerKey + "." + para.Identifier.Text;
-                Register(EnumNodeKind.Parameter, key, para.Identifier.Text);
-                Relate(containerKey, key, EnumRelated.DefinedIn);
+                Register(EnumKInd.Parameter, key, para.Identifier.Text);
+                Relate(containerKey, key, EnumRelations.DefinedIn);
                 //System.Console.WriteLine(string.Format("\t\tpara: {0} {1} {2}", para.Modifiers.ToString(), para.Type.ToString(), para.Identifier.Text));
             }
         }
