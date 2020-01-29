@@ -12,6 +12,7 @@
         public string Key { get; set; }
         public string Name { get; set; }
         public EnumKInd Kind { get; set; }
+        public string KindOf { get; set; }
         public string Properties { get; set; }
     }
 
@@ -29,6 +30,7 @@
         public string Source { get; set; }
         public string Target { get; set; }
         public EnumRelations Related { get; set; }
+        public string RelatedAs { get; set; }
         public string Properties { get; set; }
     }
 
@@ -46,8 +48,12 @@
         Constructor = 100,
         Property = 110,
         Field = 120,
-        Operator = 130,
-        Parameter = 140
+        Parameter = 130,
+        Operator = 140,
+        ImplicitOperator = 150,
+        ExplicitOperator = 160,
+        Delegate = 170,
+        AccessorList = 180
     }
 
     public enum EnumRelations

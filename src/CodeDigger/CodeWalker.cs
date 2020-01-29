@@ -62,6 +62,12 @@ namespace UsingCollectorCS
         //    base.VisitPropertyDeclaration(node);
         //}
 
+        //public override void VisitThisExpression(ThisExpressionSyntax nodeSyntax)
+        //{
+        //    CodeVisitor.Visit(nodeSyntax);
+        //    base.VisitThisExpression(nodeSyntax);
+        //}
+
         public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax nodeSyntax)
         {
             CodeVisitor.Visit(nodeSyntax);
