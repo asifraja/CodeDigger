@@ -8,8 +8,6 @@ namespace UsingCollectorCS
 {
     public class CodeVisitor
     {
-        //    // CREATE (Email:Client {id:'1', description:'email client', repo:'localgit:emailClient'})
-        //    // "CREATE (:{kind} {id:'{id}', description:'email client', repo:'localgit:emailClient'})"
         protected CodeVisitor()
         {
         }
@@ -32,6 +30,7 @@ namespace UsingCollectorCS
 
         private Node Register(EnumKInd kind, string key, string name)
         {
+            key = key.Replace("\\","\\\\");
             if (!_nodes.ContainsKey(key))
             {
                 var node = new Node { Name = name, Key = key, Kind = kind, KindOf = kind.ToString()};
@@ -44,6 +43,9 @@ namespace UsingCollectorCS
         private EdgeNode Relate(string fromKey, string toKey, EnumRelations related)
         {
             var key = fromKey + "." + toKey + "." + related.ToString();
+            key = key.Replace("\\", "\\\\");
+            fromKey = fromKey.Replace("\\", "\\\\");
+            toKey = toKey.Replace("\\", "\\\\");
             if (!_edges.ContainsKey(key))
             {
                 var relatedEdge = new EdgeNode { Source = fromKey, Target = toKey, Related = related, RelatedAs = related.ToString()};

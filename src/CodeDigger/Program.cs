@@ -12,7 +12,6 @@ using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.Text;
-using Newtonsoft.Json;
 using UsingCollectorCS;
 
 namespace CodeDigger
@@ -56,7 +55,7 @@ namespace CodeDigger
                 var nodes = new Dictionary<string, Node>();
                 var edges = new Dictionary<string, EdgeNode>();
 
-                foreach (var project in solution.Projects)//.Where(p=>p.Name.Equals("easyJet.Bookings")))
+                foreach (var project in solution.Projects.Where(p=>!p.Name.Contains("Test")))
                 {
                     foreach (var document in project.Documents)//.Where(d=>!d.Name.Contains("Dummy")))
                     {
@@ -67,9 +66,7 @@ namespace CodeDigger
                     }
                 }
                 // Save Data files
-                BuildDatafile.FixEdgeIds(nodes, edges);
-                BuildDatafile.Save(solutionName, nodes.Values.ToList());
-                BuildDatafile.Save(solutionName, edges.Values.ToList());
+                new Exporter(nodes, edges).ExportJson(solutionName).ExportNeo4J(solutionName);
             }
         }
 
@@ -109,41 +106,6 @@ namespace CodeDigger
 
                 Console.WriteLine($"{loadProgress.Operation,-15} {loadProgress.ElapsedTime,-15:m\\:ss\\.fffffff} {projectDisplay}");
             }
-        }
-    }
-
-    public class BuildDatafile
-    {
-
-        public static void FixEdgeIds(IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
-        {
-            var edgesNeedFixing = edges.Values.Where(e => e.SourceId == 0 || e.TargetId == 0);
-            foreach (var edge in edgesNeedFixing)
-            {
-                if (edge.SourceId==0)
-                {
-                    var n = nodes.Values.FirstOrDefault(n => n.Key == edge.Source);
-                    if(n!=null)
-                        edge.SourceId = n.Id;
-                }
-                if (edge.TargetId == 0)
-                {
-                    var n = nodes.Values.FirstOrDefault(n => n.Key == edge.Target);
-                    if (n != null)
-                        edge.TargetId = n.Id;
-                }
-            }
-        }
-        public static void Save(string solutionName, IList<Node> nodes)
-        {
-            var nodeData = JsonConvert.SerializeObject(nodes.OrderBy(n=>n.Key).ThenBy(y=>y.Name));
-            File.WriteAllText(@$"D:\temp\{solutionName}-nodes.txt",nodeData.Replace("{\"Id\"", Environment.NewLine+ "{\"Id\""));
-        }
-
-        public static void Save(string solutionName, IList<EdgeNode> edges)
-        {
-            var edgeData = JsonConvert.SerializeObject(edges.OrderBy(n => n.Source).ThenBy(y => y.Target));
-            File.WriteAllText(@$"D:\temp\{solutionName}-edges.txt", edgeData.Replace("{\"Id\"", Environment.NewLine + "{\"Id\""));
         }
     }
 }
