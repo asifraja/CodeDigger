@@ -12,7 +12,6 @@
         public string Key { get; set; }
         public string Name { get; set; }
         public EnumKInd Kind { get; set; }
-        public string KindOf { get; set; }
         public string Properties { get; set; }
     }
 
@@ -25,12 +24,11 @@
             Id = _idIndex;
         }
         public long Id { get; set; }
-        public long SourceId { get; set; }
-        public long TargetId { get; set; }
-        public string Source { get; set; }
-        public string Target { get; set; }
+        public long Source { get; set; }
+        public long Target { get; set; }
+        public string ParentKey { get; set; }
+        public string ChildKey { get; set; }
         public EnumRelations Related { get; set; }
-        public string RelatedAs { get; set; }
         public string Properties { get; set; }
     }
 

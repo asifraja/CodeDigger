@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UsingCollectorCS
 {
@@ -12,55 +13,49 @@ namespace UsingCollectorCS
         {
         }
 
-        public CodeVisitor(string filePath, string fileName, IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
+        public CodeVisitor(string filePath, string fileName, IDictionary<long, Node> nodes, IDictionary<long, EdgeNode> edges)
         {
-            FilePath = filePath;
-            FileName = fileName;
             _nodes = nodes;
             _edges = edges;
+            FilePath = filePath;
+            FileName = fileName;
             Register(EnumKInd.File, FilePath, FileName);
-            //System.Console.WriteLine(FilePath);
         }
 
         public string FilePath { get; }
         public string FileName { get; }
+        private IDictionary<string, long> _nodeKeyToIndex = new Dictionary<string,long>();
+        private IDictionary<string, long> _edgeKeyToIndex = new Dictionary<string, long>();
 
-        private IDictionary<string, Node> _nodes;
-        private IDictionary<string, EdgeNode> _edges;
+        private IDictionary<long, Node> _nodes;
+        private IDictionary<long, EdgeNode> _edges;
 
         private Node Register(EnumKInd kind, string key, string name)
         {
-            key = key.Replace("\\","\\\\");
-            if (!_nodes.ContainsKey(key))
-            {
-                var node = new Node { Name = name, Key = key, Kind = kind, KindOf = kind.ToString()};
-                _nodes.Add(key, node);
-                return node;
-            }
-            return null;
+            if (_nodeKeyToIndex.ContainsKey(key)) return _nodes[_nodeKeyToIndex[key]];
+            var node = new Node { Name = name, Key = key, Kind = kind};
+            _nodeKeyToIndex.Add(key,node.Id);
+            _nodes.Add(node.Id, node);
+            return node;
         }
 
-        private EdgeNode Relate(string fromKey, string toKey, EnumRelations related)
+        private EdgeNode Relate(string parentKey, string childKey, EnumRelations related)
         {
-            var key = fromKey + "." + toKey + "." + related.ToString();
-            key = key.Replace("\\", "\\\\");
-            fromKey = fromKey.Replace("\\", "\\\\");
-            toKey = toKey.Replace("\\", "\\\\");
-            if (!_edges.ContainsKey(key))
+            var key = parentKey + "." + childKey + "." + related.ToString();
+            if (_edgeKeyToIndex.ContainsKey(key)) return _edges[_edgeKeyToIndex[key]];
+
+            var relatedEdge = new EdgeNode { ParentKey = parentKey, ChildKey = childKey, Related = related};
+
+            if (_nodeKeyToIndex.ContainsKey(parentKey))
             {
-                var relatedEdge = new EdgeNode { Source = fromKey, Target = toKey, Related = related, RelatedAs = related.ToString()};
-                if(_nodes.ContainsKey(fromKey))
-                {
-                    relatedEdge.SourceId = _nodes[fromKey].Id;
-                }
-                if (_nodes.ContainsKey(toKey))
-                {
-                    relatedEdge.TargetId = _nodes[toKey].Id;
-                }
-                _edges.Add(key, relatedEdge);
-                return relatedEdge;
+                relatedEdge.Source = _nodeKeyToIndex[parentKey];
             }
-            return null;
+            if (_nodeKeyToIndex.ContainsKey(childKey))
+            {
+                relatedEdge.Target = _nodeKeyToIndex[childKey];
+            }
+            _edges.Add(relatedEdge.Id, relatedEdge);
+            return relatedEdge;
         }
 
         public void Visit(InterfaceDeclarationSyntax syntaxNode)

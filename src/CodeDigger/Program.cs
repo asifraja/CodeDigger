@@ -52,8 +52,8 @@ namespace CodeDigger
 
                 Console.WriteLine($"Finished loading solution '{solutionPath}'");
 
-                var nodes = new Dictionary<string, Node>();
-                var edges = new Dictionary<string, EdgeNode>();
+                var nodes = new Dictionary<long, Node>();
+                var edges = new Dictionary<long, EdgeNode>();
 
                 foreach (var project in solution.Projects.Where(p=>!p.Name.Contains("Test")))
                 {
@@ -66,7 +66,10 @@ namespace CodeDigger
                     }
                 }
                 // Save Data files
-                new Exporter(nodes, edges).ExportJson(solutionName).ExportNeo4J(solutionName);
+                new Exporter(nodes, edges)
+                    //.ExportJson(solutionName)
+                    //.ExportNeo4J(solutionName)
+                    .ExportCsv(solutionName) ;
             }
         }
 

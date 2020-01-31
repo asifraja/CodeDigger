@@ -10,7 +10,7 @@ namespace UsingCollectorCS
     {
         protected CodeWalker() { }
 
-        public CodeWalker(string filePath, string fielName, IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
+        public CodeWalker(string filePath, string fielName, IDictionary<long, Node> nodes, IDictionary<long, EdgeNode> edges)
         {
             FilePath = filePath;
             FileName = fielName;

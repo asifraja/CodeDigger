@@ -15,9 +15,9 @@ namespace CodeDigger
         //    // "CREATE (:{kind} {id:'{id}', description:'email client', repo:'localgit:emailClient'})"
 
         private bool _idFixed = false;
-        private IDictionary<string, Node> _nodes;
-        private IDictionary<string, EdgeNode> _edges;
-        public Exporter(IDictionary<string, Node> nodes, IDictionary<string, EdgeNode> edges)
+        private IDictionary<long, Node> _nodes;
+        private IDictionary<long, EdgeNode> _edges;
+        public Exporter(IDictionary<long, Node> nodes, IDictionary<long, EdgeNode> edges)
         {
             _nodes = nodes;
             _edges = edges;
@@ -26,20 +26,20 @@ namespace CodeDigger
         {
             if (_idFixed) return;
 
-            var edgesNeedFixing = _edges.Values.Where(e => e.SourceId == 0 || e.TargetId == 0);
+            var edgesNeedFixing = _edges.Values.Where(e => e.Source == 0 || e.Target == 0);
             foreach (var edge in edgesNeedFixing)
             {
-                if (edge.SourceId==0)
+                if (edge.Source==0)
                 {
-                    var n = _nodes.Values.FirstOrDefault(n => n.Key == edge.Source);
+                    var n = _nodes.Values.FirstOrDefault(n => n.Key == edge.ParentKey);
                     if(n!=null)
-                        edge.SourceId = n.Id;
+                        edge.Source = n.Id;
                 }
-                if (edge.TargetId == 0)
+                if (edge.Target == 0)
                 {
-                    var n = _nodes.Values.FirstOrDefault(n => n.Key == edge.Target);
+                    var n = _nodes.Values.FirstOrDefault(n => n.Key == edge.ChildKey);
                     if (n != null)
-                        edge.TargetId = n.Id;
+                        edge.Target = n.Id;
                 }
             }
             _idFixed = true;
@@ -60,6 +60,39 @@ namespace CodeDigger
             return this;
         }
 
+        public Exporter ExportCsv(string solutionName)
+        {
+            FixEdgeIds();
+            ExportNodesInCsv(solutionName);
+            ExportEdgesInCsv(solutionName);
+            return this;
+        }
+
+        private void ExportNodesInCsv(string solutionName)
+        {
+            var nodeData = _nodes.Values.OrderBy(n => n.Key).ThenBy(y => y.Name);
+            var sb = new StringBuilder();
+            sb.AppendLine($"Id,Key,Kind,KIndOf,Properties");
+            foreach (var node in nodeData)
+            {
+                sb.AppendLine($"\"{node.Id}\",\"{node.Key}\",\"{node.Kind}\",\"{node.Properties}\"");
+            }
+            File.WriteAllText(@$"D:\temp\{solutionName}-nodes.csv", sb.ToString());
+        }
+
+        private void ExportEdgesInCsv(string solutionName)
+        {
+            var edgeData = _edges.Values.OrderBy(n => n.ParentKey).ThenBy(y => y.ChildKey);
+            var sb = new StringBuilder();
+            sb.AppendLine($"Id,Source,Target,Related,ParentKey,ChildKey");
+            foreach (var node in edgeData)
+            {
+                sb.AppendLine($"\"{node.Id}\",\"{node.Source}\",\"{node.Target}\",\"{node.Related}\",\"{node.ParentKey}\",\"{node.ChildKey}\"");
+            }
+            File.WriteAllText(@$"D:\temp\{solutionName}-edges.csv", sb.ToString());
+        }
+
+
         private void ExportNodesInNeo4J(string solutionName)
         {
             var nodeData = _nodes.Values.OrderBy(n => n.Key).ThenBy(y => y.Name);
@@ -74,18 +107,17 @@ namespace CodeDigger
         private void ExportNodesInJson(string solutionName)
         {
             var nodeData = JsonConvert.SerializeObject(_nodes.Values.OrderBy(n=>n.Key).ThenBy(y=>y.Name));
+            //var nodeData = JsonConvert.SerializeObject(_nodes.OrderBy(n=>n.Value.Key));
             File.WriteAllText(@$"D:\temp\{solutionName}-nodes.json",nodeData.Replace("{\"Id\"", Environment.NewLine+ "{\"Id\""));
         }
 
         private void ExportEdgesInJson(string solutionName)
         {
             FixEdgeIds();
-            var edgeData = JsonConvert.SerializeObject(_edges.Values.OrderBy(n => n.Source).ThenBy(y => y.Target));
+            var edgeData = JsonConvert.SerializeObject(_edges.Values.OrderBy(n => n.ParentKey).ThenBy(y => y.ChildKey));
+            //var edgeData = JsonConvert.SerializeObject(_edges.OrderBy(n => n.Value.ParentKey).ThenBy(y => y.Value.ChildKey));
             File.WriteAllText(@$"D:\temp\{solutionName}-edges.json", edgeData.Replace("{\"Id\"", Environment.NewLine + "{\"Id\""));
         }
-
-
-
     }
 }
 
